@@ -32,6 +32,9 @@ public class DlrFromTelco {
     @Column(name="provider_msg_id", length = 50)
     private String providerMsgId;
 
+    @Column(name="status", length = 50)
+    private String status;
+
     @Column(name = "query_string", length = 200)
     private String queryString;
 

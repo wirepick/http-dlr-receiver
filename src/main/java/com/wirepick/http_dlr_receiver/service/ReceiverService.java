@@ -26,14 +26,29 @@ public class ReceiverService {
         try {
             LOGGER.info("persisting the DLR request received: {}", dlr);
             // Save the DLR request here
-            DlrFromTelco dlrFromTelco = new DlrFromTelco();
-            dlrFromTelco.setRecdTime(LocalDateTime.now());
-            dlrFromTelco.setProvider(provider);
-            dlrFromTelco.setProviderMsgId(dlr.getCallbackData());
-            dlrFromTelco.setQueryString(dlr.getDeliveryInfo().getDeliveryStatus());
-            dlrFromTelcoRepo.save(dlrFromTelco);
-            LOGGER.info("DLR request persisted successfully: {}", dlrFromTelco);
-            return ResponseEntity.ok("DLR received");
+            DlrFromTelco existingDlr = dlrFromTelcoRepo.findByProviderAndProviderMsgId(provider, dlr.getCallbackData()).orElse(null);
+            if (existingDlr != null) {
+                LOGGER.info(" Existing DLR found for provider: {} and message ID: {}, proceeding with update", provider,
+                        dlr.getCallbackData());
+                existingDlr.setRecdTime(LocalDateTime.now());
+                existingDlr.setStatus(dlr.getDeliveryInfo().getDeliveryStatus());
+                existingDlr.setQueryString(dlr.toString());
+                dlrFromTelcoRepo.save(existingDlr);
+                LOGGER.info("DLR request persisted successfully: {}", existingDlr);
+                return ResponseEntity.ok("DLR received");
+            } else {
+                LOGGER.warn("No existing DLR found for provider: {} and message ID: {}, , proceeding with creation", provider,
+                        dlr.getCallbackData());
+                DlrFromTelco dlrFromTelco = new DlrFromTelco();
+                dlrFromTelco.setRecdTime(LocalDateTime.now());
+                dlrFromTelco.setProvider(provider);
+                dlrFromTelco.setProviderMsgId(dlr.getCallbackData());
+                dlrFromTelco.setStatus(dlr.getDeliveryInfo().getDeliveryStatus());
+                dlrFromTelco.setQueryString(dlr.toString());
+                dlrFromTelcoRepo.save(dlrFromTelco);
+                LOGGER.info("DLR request persisted successfully: {}", dlrFromTelco);
+                return ResponseEntity.ok("DLR received");
+            }
         } catch (Exception e) {
             LOGGER.error("Error persisting DLR request: {}", e.getMessage());
             return ResponseEntity.status(500).body("Error persisting DLR request");
